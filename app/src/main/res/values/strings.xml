@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ADS</string>
+    <string name="pipe_console_name">ADS 管道控制台</string>
+    <string name="fgs_running">shell 运行时就绪</string>
+</resources>
