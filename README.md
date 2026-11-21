@@ -57,7 +57,7 @@ shexec pm list packages                              # 经 Shizuku，uid 2000
 ./gradlew testDebugUnitTest    # 解释器语义单测
 ```
 
-`gradle.properties` 中含本机代理配置（127.0.0.1:7897），无代理环境请删除其中的 `systemProp.*` 条目。
+如需通过代理拉取依赖，请在用户级 `~/.gradle/gradle.properties` 中配置 `systemProp.https.proxyHost/Port`，不要提交到仓库。
 
 ## 安装与运行
 
