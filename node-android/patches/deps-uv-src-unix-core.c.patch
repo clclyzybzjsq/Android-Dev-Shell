@@ -1,0 +1,11 @@
+--- a/deps/uv/src/unix/core.c
++++ b/deps/uv/src/unix/core.c
+@@ -1323,7 +1323,7 @@ int uv_os_tmpdir(char* buffer, size_t* size) {
+ 
+   /* No temp environment variables defined */
+   #if defined(__ANDROID__)
+-    buf = "/data/local/tmp";
++    buf = "@TERMUX_PREFIX@/tmp";
+   #else
+     buf = "/tmp";
+   #endif

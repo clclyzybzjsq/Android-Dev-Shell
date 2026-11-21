@@ -1,0 +1,11 @@
+--- a/lib/child_process.js
++++ b/lib/child_process.js
+@@ -689,7 +689,7 @@ function normalizeSpawnArguments(file, args, options) {
+       if (typeof options.shell === 'string')
+         file = options.shell;
+       else if (process.platform === 'android')
+-        file = '/system/bin/sh';
++        file = '@TERMUX_PREFIX@/bin/sh';
+       else
+         file = '/bin/sh';
+       args = ['-c', command];

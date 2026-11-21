@@ -1,0 +1,44 @@
+name: build-node-android
+
+# Cross-compile Node.js for Android arm64 (bionic) -> libnode.so
+# Recipe adapted from termux/termux-packages packages/nodejs (MIT).
+on:
+  workflow_dispatch:
+    inputs:
+      node_version:
+        description: "Node.js version to cross-compile"
+        required: false
+        default: "26.13.1"
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install host toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build clang python3 patchelf file
+
+      - name: Setup Android NDK
+        id: ndk
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r28c
+          add-to-path: false
+
+      - name: Build libnode.so (arm64)
+        env:
+          NODE_VERSION: ${{ inputs.node_version || '26.13.1' }}
+          ANDROID_NDK_LATEST_HOME: ${{ steps.ndk.outputs.ndk-path }}
+        working-directory: node-android
+        run: bash build.sh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libnode-arm64-v8a-${{ inputs.node_version || '26.13.1' }}
+          path: node-android/out/libnode.so
+          if-no-files-found: error
