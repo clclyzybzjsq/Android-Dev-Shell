@@ -33,19 +33,14 @@ CXX="$TOOLCHAIN/bin/aarch64-linux-android$API-clang++"
 if command -v clang-19 >/dev/null 2>&1; then
   CC_host=clang-19
   CXX_host=clang++-19
-  # wrapper appends -latomic AFTER objects: V8's JSDispatchTable/wasm
-  # tables use 16-byte CAS that glibc only provides in libatomic, and
-  # node 26.13.1 configure has no host_ldflags option.
-  HOSTXX="$BUILD/clangxx-host-wrapper"
-  mkdir -p "$BUILD"
-  printf '#!/bin/sh\nexec clang++-19 "$@" -latomic\n' > "$HOSTXX"
-  chmod +x "$HOSTXX"
-  LINK_host="$HOSTXX"
 else
   CC_host=clang
   CXX_host=clang++
-  LINK_host=clang++
 fi
+# gyp ninja generator reads LDFLAGS_host for the host toolset; V8's
+# JSDispatchTable/wasm tables use 16-byte CAS that glibc only provides in
+# libatomic, and node 26.13.1 has no configure option for host ldflags.
+export LDFLAGS_host="-latomic"
 
 # --- fetch source ---
 SRC="$BUILD/node-v$NODE_VERSION"
@@ -74,7 +69,7 @@ mkdir -p "$SRC/sources/android"
 cp -r "$ANDROID_NDK_LATEST_HOME/sources/android/cpufeatures" "$SRC/sources/android/"
 
 # --- configure ---
-export CC CXX CC_host CXX_host LINK_host="$CXX_host"
+export CC CXX CC_host CXX_host
 export GYP_DEFINES="host_os=linux android_ndk_path=$ANDROID_NDK_LATEST_HOME"
 CFLAGS="-O2 -fno-omit-frame-pointer"
 LDFLAGS="-Wl,-z,max-page-size=16384"   # 16KB page alignment for Play compliance
