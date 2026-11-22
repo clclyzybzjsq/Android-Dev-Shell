@@ -20,7 +20,16 @@ jobs:
       - name: Install host toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install -y ninja-build clang python3 patchelf file
+          sudo apt-get install -y ninja-build python3 patchelf file clang-19
+          # node 26's V8 needs host clang >= 19.1 (consteval lambdas in regexp
+          # bytecodes); ubuntu-24.04 default clang is 18. If 19 is not in the
+          # distro repos, fall back to apt.llvm.org.
+          if ! command -v clang-19 >/dev/null; then
+            wget -q https://apt.llvm.org/llvm.sh
+            chmod +x llvm.sh
+            sudo ./llvm.sh 19
+          fi
+          clang-19 --version | head -1
 
       - name: Pin ninja 1.11.1
         # ninja >= 1.12 errors on the duplicate stamp rules that v8_inspector_headers

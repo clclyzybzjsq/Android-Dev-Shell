@@ -28,8 +28,17 @@ CXX="$TOOLCHAIN/bin/aarch64-linux-android$API-clang++"
 [ -x "$CC" ] || { echo "NDK clang not found at $CC"; exit 1; }
 
 # --- host compiler for node_js2c / v8 codegen ---
-CC_host=clang
-CXX_host=clang++
+# node 26 V8 requires clang >= 19.1 on the host too (obj.host v8 regexp
+# consteval lambdas fail with clang 18); the CI installs clang-19.
+if command -v clang-19 >/dev/null 2>&1; then
+  CC_host=clang-19
+  CXX_host=clang-19++
+  LINK_host=clang-19++
+else
+  CC_host=clang
+  CXX_host=clang++
+  LINK_host=clang++
+fi
 
 # --- fetch source ---
 SRC="$BUILD/node-v$NODE_VERSION"
