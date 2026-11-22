@@ -145,6 +145,9 @@ ninja -C out/Release -w dupbuild=warn -j "$(nproc)"
 STRIP="$TOOLCHAIN/bin/llvm-strip"
 cp out/Release/node "$OUT/libnode.so"
 "$STRIP" --strip-unneeded "$OUT/libnode.so"
-"$TOOLCHAIN/bin/llvm-readelf" -h "$OUT/libnode.so" | head -5
-ls -la "$OUT/libnode.so"
+# head closes the pipe early -> SIGPIPE kills readelf -> pipefail aborts the
+# script; write to a file instead
+"$TOOLCHAIN/bin/llvm-readelf" -h "$OUT/libnode.so" > "$OUT/readelf.txt" || true
+head -5 "$OUT/readelf.txt" || true
+ls -la "$OUT" || true
 echo "OK: $OUT/libnode.so"
