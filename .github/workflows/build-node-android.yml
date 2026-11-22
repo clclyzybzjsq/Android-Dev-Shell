@@ -33,17 +33,20 @@ jobs:
           echo /usr/local/ninja111 >> "$GITHUB_PATH"
           ninja --version
 
-      - name: Setup Android NDK
-        id: ndk
-        uses: nttld/setup-ndk@v1
-        with:
-          ndk-version: r28c
-          add-to-path: false
+      - name: Setup Android NDK r29
+        # node 26's V8 requires clang++ >= 19.1.0 (std::atomic_ref in libc++);
+        # NDK r28c ships clang 19.0.1 which fails. NDK r29 satisfies it
+        # (matches termux's current nodejs packaging).
+        run: |
+          curl -sL -o /tmp/ndk.zip https://dl.google.com/android/repository/android-ndk-r29-linux.zip
+          sudo mkdir -p /opt/ndk
+          sudo unzip -q /tmp/ndk.zip -d /opt/ndk
+          echo "ANDROID_NDK_LATEST_HOME=/opt/ndk/android-ndk-r29" >> "$GITHUB_ENV"
+          /opt/ndk/android-ndk-r29/toolchains/llvm/prebuilt/linux-x86_64/bin/clang --version | head -2
 
       - name: Build libnode.so (arm64)
         env:
           NODE_VERSION: ${{ inputs.node_version || '26.13.1' }}
-          ANDROID_NDK_LATEST_HOME: ${{ steps.ndk.outputs.ndk-path }}
         working-directory: node-android
         run: bash build.sh
 
