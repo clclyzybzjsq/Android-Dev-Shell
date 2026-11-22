@@ -70,12 +70,11 @@ cp -r "$ANDROID_NDK_LATEST_HOME/sources/android/cpufeatures" "$SRC/sources/andro
 
 # --- build libcpufeatures.a: openssl/zlib's cpu detection CALLS
 #     android_getCpuFeatures(); the implementation lives in NDK's
-#     cpufeatures/cpu-features.c. Injected via gyp's LDFLAGS env (which lands
-#     after objects in the rspfile). ---
+#     cpufeatures/cpu-features.c. node's configure.py filters the LDFLAGS env
+#     for gyp, so instead we patch the generated target ninja files below. ---
 "$CC" -c "$SRC/sources/android/cpufeatures/cpu-features.c" -o "$BUILD/cpu-features.o"
 "$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/$HOST_TAG/bin/llvm-ar" \
   rcs "$BUILD/libcpufeatures.a" "$BUILD/cpu-features.o"
-export LDFLAGS="-L$BUILD -lcpufeatures"
 
 # --- ccache 包装：CC/CXX 必须是单命令，gyp 展开时不接受带空格的命令串 ---
 CCACHE_DIR="${CCACHE_DIR:-$HOME/.ccache}"
@@ -117,6 +116,13 @@ python3 configure.py \
 for f in out/Release/obj.host/*.ninja; do
   [ -e "$f" ] && sed -i "s|-I/data/data/dev.ads.shell/files/usr/include||g; s|-L/data/data/dev.ads.shell/files/usr/lib||g" "$f"
 done
+
+# append libcpufeatures to every TARGET link step (gyp ninja rspfile order is
+# libs -> in -> ldflags, so it lands after objects; host toolset untouched)
+for f in out/Release/obj/*.ninja out/Release/obj/*/*.ninja; do
+  [ -e "$f" ] && sed -i "s|^ldflags = |ldflags = -L$BUILD -lcpufeatures |" "$f"
+done
+grep -rl "lcpufeatures" out/Release/obj/ >/dev/null && echo "ninja patched: libcpufeatures linked"
 
 # --- build ---
 # dupbuild=warn: modern ninja treats duplicate stamp rules (v8_inspector_headers
