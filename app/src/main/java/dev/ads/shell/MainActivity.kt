@@ -80,6 +80,8 @@ class MainActivity : AppCompatActivity(), TerminalSessionClient {
         terminalView.isFocusableInTouchMode = true
         root.addView(terminalView, LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
+        // 软键盘/adb 注入的 ENTER 必须落到终端而非其他可点击视图
+        terminalView.requestFocus()
 
         root.addView(buildExtraKeys(), LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
@@ -113,9 +115,26 @@ class MainActivity : AppCompatActivity(), TerminalSessionClient {
         )
         val args = arrayOf("-l")
         // 不同 ROM 的 mksh 位置不同：优先 mksh，回退到必有的 /system/bin/sh
+        // （Android 12+ 禁止 untrusted_app 经 app_process 启动 Java 子进程，
+        //   所以登录 shell 保持 mksh，cmdlet 通过 `ads` 桥接函数接入，见 SocketRepl）
         val shellPath = if (File("/system/bin/mksh").canExecute()) "/system/bin/mksh"
                         else if (File("/system/xbin/mksh").canExecute()) "/system/xbin/mksh"
                         else "/system/bin/sh"
+        // ads() 桥：先写 .profile 再启动会话（mksh 启动即读取，不能有竞态）
+        val profile = File(home, ".profile")
+        if (!profile.exists()) {
+            val D: String = "${'$'}"
+            profile.writeText(
+                """
+                |# ADS cmdlet bridge（由应用生成；ads.env 由 SocketRepl 维护）
+                |if [ -f "${D}HOME/ads.env" ]; then
+                |  . "${D}HOME/ads.env"
+                |  ads() { printf '%s\n%b\n' "${D}ADS_TOKEN" "${D}*" | nc 127.0.0.1 "${D}ADS_PORT" | grep -v '^ads-exit:'; }
+                |fi
+                |
+                """.trimMargin()
+            )
+        }
         val s = TerminalSession(shellPath, home.absolutePath, args, env, 400, this)
         svc.addSession(s)
         session = s

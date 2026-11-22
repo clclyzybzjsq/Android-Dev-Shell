@@ -48,6 +48,8 @@ class TermService : Service() {
         } else {
             startForeground(NOTIFICATION_ID, notification)
         }
+        // 本地 REPL 服务器：终端 ads() 桥 + agent 接口
+        SocketRepl.start(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
