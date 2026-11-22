@@ -68,6 +68,15 @@ done
 mkdir -p "$SRC/sources/android"
 cp -r "$ANDROID_NDK_LATEST_HOME/sources/android/cpufeatures" "$SRC/sources/android/"
 
+# --- build libcpufeatures.a: openssl/zlib's cpu detection CALLS
+#     android_getCpuFeatures(); the implementation lives in NDK's
+#     cpufeatures/cpu-features.c. Injected via gyp's LDFLAGS env (which lands
+#     after objects in the rspfile). ---
+"$CC" -c "$SRC/sources/android/cpufeatures/cpu-features.c" -o "$BUILD/cpu-features.o"
+"$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/$HOST_TAG/bin/llvm-ar" \
+  rcs "$BUILD/libcpufeatures.a" "$BUILD/cpu-features.o"
+export LDFLAGS="-L$BUILD -lcpufeatures"
+
 # --- ccache 包装：CC/CXX 必须是单命令，gyp 展开时不接受带空格的命令串 ---
 CCACHE_DIR="${CCACHE_DIR:-$HOME/.ccache}"
 export CCACHE_DIR CCACHE_COMPILERCHECK=content CCACHE_MAXSIZE=10G CCACHE_SLOPPINESS=file_stat_matches,include_file_mtime
