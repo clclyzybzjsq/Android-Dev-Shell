@@ -68,7 +68,10 @@ for f in out/Release/obj.host/*.ninja; do
 done
 
 # --- build ---
-ninja -C out/Release -j "$(nproc)"
+# dupbuild=warn: modern ninja treats duplicate stamp rules (v8_inspector_headers
+# in cross builds) as errors; termux's nodejs recipe relies on the old warn-only
+# behavior. See https://github.com/ninja-build/ninja/issues/1909
+ninja -C out/Release -w dupbuild=warn -j "$(nproc)"
 
 # --- ship as APKLF-named executable ---
 STRIP="$TOOLCHAIN/bin/llvm-strip"
