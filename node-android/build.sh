@@ -33,7 +33,14 @@ CXX="$TOOLCHAIN/bin/aarch64-linux-android$API-clang++"
 if command -v clang-19 >/dev/null 2>&1; then
   CC_host=clang-19
   CXX_host=clang++-19
-  LINK_host=clang++-19
+  # wrapper appends -latomic AFTER objects: V8's JSDispatchTable/wasm
+  # tables use 16-byte CAS that glibc only provides in libatomic, and
+  # node 26.13.1 configure has no host_ldflags option.
+  HOSTXX="$BUILD/clangxx-host-wrapper"
+  mkdir -p "$BUILD"
+  printf '#!/bin/sh\nexec clang++-19 "$@" -latomic\n' > "$HOSTXX"
+  chmod +x "$HOSTXX"
+  LINK_host="$HOSTXX"
 else
   CC_host=clang
   CXX_host=clang++
@@ -79,7 +86,6 @@ python3 configure.py \
   --cross-compiling \
   --without-npm \
   --with-intl=small-icu \
-  --host-ldflags=-latomic \
   --ninja \
   --verbose
 
