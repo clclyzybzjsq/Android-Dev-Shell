@@ -68,6 +68,25 @@ done
 mkdir -p "$SRC/sources/android"
 cp -r "$ANDROID_NDK_LATEST_HOME/sources/android/cpufeatures" "$SRC/sources/android/"
 
+# --- ccache 包装：CC/CXX 必须是单命令，gyp 展开时不接受带空格的命令串 ---
+CCACHE_DIR="${CCACHE_DIR:-$HOME/.ccache}"
+export CCACHE_DIR CCACHE_COMPILERCHECK=content CCACHE_MAXSIZE=10G CCACHE_SLOPPINESS=file_stat_matches,include_file_mtime
+if command -v ccache >/dev/null 2>&1; then
+  mkdir -p "$BUILD/ccwrap"
+  for name in cc cxx hostcc hostcxx; do :; done
+  printf '#!/bin/sh\nexec ccache %s "$@"\n' "$CC"  > "$BUILD/ccwrap/cc"
+  printf '#!/bin/sh\nexec ccache %s "$@"\n' "$CXX" > "$BUILD/ccwrap/cxx"
+  printf '#!/bin/sh\nexec ccache %s "$@"\n' "$CC_host"  > "$BUILD/ccwrap/hostcc"
+  printf '#!/bin/sh\nexec ccache %s "$@"\n' "$CXX_host" > "$BUILD/ccwrap/hostcxx"
+  chmod +x "$BUILD/ccwrap/"*
+  CC="$BUILD/ccwrap/cc"
+  CXX="$BUILD/ccwrap/cxx"
+  CC_host="$BUILD/ccwrap/hostcc"
+  CXX_host="$BUILD/ccwrap/hostcxx"
+  echo "ccache enabled: $(ccache --version | head -1)"
+  ccache --zero-stats >/dev/null 2>&1 || true
+fi
+
 # --- configure ---
 export CC CXX CC_host CXX_host
 export GYP_DEFINES="host_os=linux android_ndk_path=$ANDROID_NDK_LATEST_HOME"

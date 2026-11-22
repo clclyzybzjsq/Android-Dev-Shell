@@ -20,7 +20,7 @@ jobs:
       - name: Install host toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install -y ninja-build python3 patchelf file clang-19
+          sudo apt-get install -y ninja-build python3 patchelf file clang-19 ccache
           # node 26's V8 needs host clang >= 19.1 (consteval lambdas in regexp
           # bytecodes); ubuntu-24.04 default clang is 18. If 19 is not in the
           # distro repos, fall back to apt.llvm.org.
@@ -30,6 +30,15 @@ jobs:
             sudo ./llvm.sh 19
           fi
           clang-19 --version | head -1
+
+      - name: Restore ccache
+        # 失败迭代的关键：重跑时已编译对象全部命中缓存，几分钟内到达上次失败点
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.ccache
+          key: node-ccache-${{ inputs.node_version || '26.13.1' }}-${{ github.run_id }}
+          restore-keys: |
+            node-ccache-${{ inputs.node_version || '26.13.1' }}-
 
       - name: Pin ninja 1.11.1
         # ninja >= 1.12 errors on the duplicate stamp rules that v8_inspector_headers
@@ -58,6 +67,13 @@ jobs:
           NODE_VERSION: ${{ inputs.node_version || '26.13.1' }}
         working-directory: node-android
         run: bash build.sh
+
+      - name: Save ccache (always, even on failure)
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.ccache
+          key: node-ccache-${{ inputs.node_version || '26.13.1' }}-${{ github.run_id }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
