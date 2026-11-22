@@ -22,6 +22,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ninja-build clang python3 patchelf file
 
+      - name: Pin ninja 1.11.1
+        # ninja >= 1.12 errors on the duplicate stamp rules that v8_inspector_headers
+        # generates in node cross builds; 1.11.1 is the last release with warn-only
+        # behavior (node-android/build.sh also passes -w dupbuild=warn).
+        run: |
+          curl -sL -o /tmp/ninja.zip https://github.com/ninja-build/ninja/releases/download/v1.11.1/ninja-linux.zip
+          sudo mkdir -p /usr/local/ninja111
+          sudo unzip -o /tmp/ninja.zip -d /usr/local/ninja111
+          echo /usr/local/ninja111 >> "$GITHUB_PATH"
+          ninja --version
+
       - name: Setup Android NDK
         id: ndk
         uses: nttld/setup-ndk@v1
