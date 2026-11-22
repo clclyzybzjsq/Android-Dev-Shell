@@ -79,6 +79,7 @@ python3 configure.py \
   --cross-compiling \
   --without-npm \
   --with-intl=small-icu \
+  --host-ldflags=-latomic \
   --ninja \
   --verbose
 
