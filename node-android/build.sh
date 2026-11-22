@@ -46,6 +46,12 @@ for p in "$ROOT"/patches/*.patch; do
   patch -p1 --forward < "$p" || echo "WARN: patch $(basename "$p") partially failed"
 done
 
+# --- vendored cpufeatures: node's bundled zlib expects cpu-features.h/.c at
+#     <node-root>/sources/android/cpufeatures on android targets (termux ships
+#     it as a package; we copy it from the NDK into the same relative path). ---
+mkdir -p "$SRC/sources/android"
+cp -r "$ANDROID_NDK_LATEST_HOME/sources/android/cpufeatures" "$SRC/sources/android/"
+
 # --- configure ---
 export CC CXX CC_host CXX_host LINK_host="$CXX_host"
 export GYP_DEFINES="host_os=linux"
