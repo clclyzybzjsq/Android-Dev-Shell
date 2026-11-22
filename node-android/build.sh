@@ -118,11 +118,21 @@ for f in out/Release/obj.host/*.ninja; do
 done
 
 # append libcpufeatures to every TARGET link step (gyp ninja rspfile order is
-# libs -> in -> ldflags, so it lands after objects; host toolset untouched)
-for f in out/Release/obj/*.ninja out/Release/obj/*/*.ninja; do
-  [ -e "$f" ] && sed -i "s|^ldflags = |ldflags = -L$BUILD -lcpufeatures |" "$f"
-done
-grep -rl "lcpufeatures" out/Release/obj/ >/dev/null && echo "ninja patched: libcpufeatures linked"
+# libs -> in -> ldflags, so it lands after objects; host toolset untouched).
+# Some targets (e.g. openssl-cli) have no ldflags binding of their own — give
+# those a file-level one at the top of the ninja file.
+PATCHED=0
+while IFS= read -r f; do
+  case "$f" in *obj.host*) continue ;; esac
+  if grep -q '^ldflags = ' "$f"; then
+    sed -i "s|^ldflags = |ldflags = -L$BUILD -lcpufeatures |" "$f"
+  else
+    sed -i "1i ldflags = -L$BUILD -lcpufeatures" "$f"
+  fi
+  PATCHED=$((PATCHED+1))
+done < <(find out/Release/obj -name '*.ninja')
+echo "ninja patched: $PATCHED files link libcpufeatures"
+[ "$PATCHED" -gt 20 ] || { echo "patch coverage too low"; exit 1; }
 
 # --- build ---
 # dupbuild=warn: modern ninja treats duplicate stamp rules (v8_inspector_headers
