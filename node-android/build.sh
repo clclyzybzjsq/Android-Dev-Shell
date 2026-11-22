@@ -32,8 +32,8 @@ CXX="$TOOLCHAIN/bin/aarch64-linux-android$API-clang++"
 # consteval lambdas fail with clang 18); the CI installs clang-19.
 if command -v clang-19 >/dev/null 2>&1; then
   CC_host=clang-19
-  CXX_host=clang-19++
-  LINK_host=clang-19++
+  CXX_host=clang++-19
+  LINK_host=clang++-19
 else
   CC_host=clang
   CXX_host=clang++
