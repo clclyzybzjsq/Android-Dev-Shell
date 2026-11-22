@@ -109,6 +109,7 @@ python3 configure.py \
   --without-npm \
   --with-intl=small-icu \
   --openssl-no-asm \
+  --v8-disable-temporal-support \
   --ninja \
   --verbose
 
