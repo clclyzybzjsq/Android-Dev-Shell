@@ -81,6 +81,7 @@ python3 configure.py \
   --cross-compiling \
   --without-npm \
   --with-intl=small-icu \
+  --openssl-no-asm \
   --ninja \
   --verbose
 
