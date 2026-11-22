@@ -105,14 +105,24 @@ class PipeConsoleActivity : AppCompatActivity() {
         )
 
         // agent/adb 驱动入口：am start --es autorun 'cmd1; cmd2; ...'
-        intent?.getStringExtra("autorun")?.let { script ->
-            print("\n[autorun]\n")
-            window.decorView.post {
-                script.split('\n', ';').map { it.trim() }.filter { it.isNotEmpty() }.forEach { line ->
-                    execLine(line)
-                }
-                print("\n[autorun done, exit=${ctx.lastExit}]\n")
+        runAutorun(intent)
+    }
+
+    /** adb 重复驱动时（app 存活）也会经 onNewIntent 重新投递 autorun */
+    override fun onNewIntent(intent: android.content.Intent?) {
+        super.onNewIntent(intent)
+        runAutorun(intent)
+    }
+
+    private fun runAutorun(intent: android.content.Intent?) {
+        val script = intent?.getStringExtra("autorun") ?: return
+        if (script.isBlank()) return
+        print("\n[autorun]\n")
+        window.decorView.post {
+            script.split('\n', ';').map { it.trim() }.filter { it.isNotEmpty() }.forEach { line ->
+                execLine(line)
             }
+            print("\n[autorun done, exit=${ctx.lastExit}]\n")
         }
     }
 

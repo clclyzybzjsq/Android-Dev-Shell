@@ -132,10 +132,22 @@ class CoreCmdlets {
             }
         }
 
-        class Sh : Cmdlet("sh", "<命令行...>  交给 /system/bin/sh 执行（支持 | > 等 POSIX 语法）") {
-            override fun run(args: List<String>, input: Sequence<JValue>, ctx: Ctx): Sequence<JValue> {
-                if (args.isEmpty()) ctx.error("sh: 缺少命令")
-                return ctx.external.pipe(listOf("/system/bin/sh", "-c", args.joinToString(" ")), input, ctx)
+        class Sh : Cmdlet("sh", "<命令行...>  交给 /system/bin/sh 执行（支持 | > 等 POSIX 语法；亦可从管道读入脚本）") {
+            override fun run(args: List<String>, input: Sequence<JValue>, ctx: Ctx) = sequence<JValue> {
+                val argScript = args.isNotEmpty()
+                val script = if (argScript) {
+                    args.joinToString(" ")
+                } else {
+                    val lines = input.filterIsInstance<JValue.JStr>().map { it.v }.toList()
+                    if (lines.isEmpty()) {
+                        ctx.error("sh: 缺少命令（参数或管道输入至少提供一个脚本）")
+                        ctx.lastExit = 1
+                        return@sequence
+                    }
+                    lines.joinToString("\n")
+                }
+                val stdin = if (argScript) input else emptySequence()
+                for (v in ctx.external.pipe(listOf("/system/bin/sh", "-c", script), stdin, ctx)) yield(v)
             }
         }
     }
