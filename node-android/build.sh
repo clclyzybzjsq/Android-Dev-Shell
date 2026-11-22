@@ -40,10 +40,15 @@ if [ ! -f "$SRC/configure.py" ]; then
 fi
 
 # --- apply android patches (from termux/termux-packages, MIT) ---
+# NOTE: skip common.gypi.patch — termux removes the OS==android -I cpufeatures
+# block because they use --shared-zlib; we compile bundled zlib and need that
+# block, driven by the android_ndk_path gyp variable (see configure below).
 cd "$SRC"
 for p in "$ROOT"/patches/*.patch; do
-  echo "applying $(basename "$p")"
-  patch -p1 --forward < "$p" || echo "WARN: patch $(basename "$p") partially failed"
+  base=$(basename "$p")
+  if [ "$base" = "common.gypi.patch" ]; then echo "skip $base (keep upstream cpufeatures include)"; continue; fi
+  echo "applying $base"
+  patch -p1 --forward < "$p" || echo "WARN: patch $base partially failed"
 done
 
 # --- vendored cpufeatures: node's bundled zlib expects cpu-features.h/.c at
@@ -54,7 +59,7 @@ cp -r "$ANDROID_NDK_LATEST_HOME/sources/android/cpufeatures" "$SRC/sources/andro
 
 # --- configure ---
 export CC CXX CC_host CXX_host LINK_host="$CXX_host"
-export GYP_DEFINES="host_os=linux"
+export GYP_DEFINES="host_os=linux android_ndk_path=$ANDROID_NDK_LATEST_HOME"
 CFLAGS="-O2 -fno-omit-frame-pointer"
 LDFLAGS="-Wl,-z,max-page-size=16384"   # 16KB page alignment for Play compliance
 
