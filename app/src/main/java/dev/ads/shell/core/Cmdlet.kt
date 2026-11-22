@@ -53,6 +53,8 @@ class Ctx(
     val err: (String) -> Unit,
     val bridge: AndroidBridge,
     val external: ExternalRunner,
+    /** 平台宿主对象：Android 上为 Context，JVM 测试为 null（core 保持平台无关） */
+    val host: Any? = null,
 ) {
     var lastExit = 0
     internal var exitRequested = false

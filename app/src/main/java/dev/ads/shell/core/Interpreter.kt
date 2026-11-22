@@ -124,6 +124,7 @@ class Interpreter(private val registry: CmdletRegistry) {
             dev.ads.shell.cmdlets.NetCmdlets.registerAll(r)
             dev.ads.shell.cmdlets.AndroidCmdlets.registerAll(r)
             dev.ads.shell.cmdlets.ShizukuCmdlets.registerAll(r)
+            dev.ads.shell.cmdlets.DshCmdlet().let { r.register(it) }
             dev.ads.shell.cmdlets.ShellRegistry.ref = r
             return r
         }

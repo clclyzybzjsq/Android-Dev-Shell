@@ -197,7 +197,13 @@ class MainActivity : AppCompatActivity(), TerminalSessionClient {
     // TerminalViewClient
     // ------------------------------------------------------------------
     inner class Client : TerminalViewClient {
-        override fun onScale(scale: Float): Float = scale
+        private var fontSp = 30f
+        override fun onScale(scale: Float): Float {
+            // 捏合缩放字号（8–44sp），返回 1 让视图重置累积因子，下一事件继续增量
+            fontSp = (fontSp * scale).coerceIn(8f, 44f)
+            terminalView.setTextSize(fontSp.toInt())
+            return 1f
+        }
         override fun onSingleTapUp(e: MotionEvent?) {
             val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
             imm.showSoftInput(terminalView, 0)

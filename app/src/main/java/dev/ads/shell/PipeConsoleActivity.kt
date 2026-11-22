@@ -101,6 +101,7 @@ class PipeConsoleActivity : AppCompatActivity() {
             err = { s -> appendOut(s) },
             bridge = AndroidBridgeImpl(applicationContext),
             external = ProcessExternalRunner(),
+            host = applicationContext,
         )
 
         // agent/adb 驱动入口：am start --es autorun 'cmd1; cmd2; ...'
