@@ -54,6 +54,15 @@ object DshRuntime {
         true
     } catch (_: Exception) { false }
 
+    /** dsh 模块是否已随本 APK 安装（闭包资产存在）；纯 ADS 构建为 false */
+    @JvmStatic
+    var appContext: android.content.Context? = null
+
+    fun isClosureInstalled(): Boolean {
+        val c = appContext ?: return false
+        return closureEntry(c) != null || assetExists(c)
+    }
+
     fun state(ctx: Context): State {
         val node = nodePath(ctx)
         val entry = closureEntry(ctx)

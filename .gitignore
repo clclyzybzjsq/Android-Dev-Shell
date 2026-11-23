@@ -10,7 +10,7 @@ build/
 *.apk
 *.aab
 .kotlin/
-app/src/main/jniLibs/arm64-v8a/libnode.so
-app/src/main/jniLibs/arm64-v8a/libc++_shared.so
-app/src/main/assets/dsh-runtime/
+harness/src/main/jniLibs/arm64-v8a/libnode.so
+harness/src/main/jniLibs/arm64-v8a/libc++_shared.so
+harness/src/main/assets/dsh-runtime/
 app/src/main/assets/webui/

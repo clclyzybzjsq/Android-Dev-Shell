@@ -124,7 +124,10 @@ class Interpreter(private val registry: CmdletRegistry) {
             dev.ads.shell.cmdlets.NetCmdlets.registerAll(r)
             dev.ads.shell.cmdlets.AndroidCmdlets.registerAll(r)
             dev.ads.shell.cmdlets.ShizukuCmdlets.registerAll(r)
-            dev.ads.shell.cmdlets.DshCmdlet().let { r.register(it) }
+            // dsh cmdlet 仅在 dsh 运行时闭包存在时注册（纯 ADS 不含 dsh 模块）
+            if (dev.ads.shell.dsh.DshRuntime.isClosureInstalled()) {
+                dev.ads.shell.cmdlets.DshCmdlet().let { r.register(it) }
+            }
             dev.ads.shell.cmdlets.ShellRegistry.ref = r
             return r
         }

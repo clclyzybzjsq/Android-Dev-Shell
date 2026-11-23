@@ -17,5 +17,6 @@ dependencyResolutionManagement {
 rootProject.name = "Android-Dev-Shell"
 
 include(":app")
+include(":harness")
 include(":terminal-emulator")
 include(":terminal-view")

@@ -49,6 +49,7 @@ class TermService : Service() {
             startForeground(NOTIFICATION_ID, notification)
         }
         // 本地 REPL 服务器：终端 ads() 桥 + agent 接口
+        dev.ads.shell.dsh.DshRuntime.appContext = this
         SocketRepl.start(this)
     }
 
