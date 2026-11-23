@@ -81,8 +81,12 @@ class DshCmdlet : Cmdlet(
             return@sequence
         }
 
-        // 参数装配：dsh [--profile 名] [app-args...]
-        val rest = args.drop(1).toMutableList()
+        // 参数装配：仅 status/install 子命令占位第一个参数
+        val rest = if (args.firstOrNull() == "status" || args.firstOrNull() == "install") {
+            args.drop(1).toMutableList()
+        } else {
+            args.toMutableList()
+        }
         val profileIdx = rest.indexOf("--profile")
         val profile = if (profileIdx >= 0 && profileIdx + 1 < rest.size) {
             val p = rest[profileIdx + 1]
@@ -96,6 +100,16 @@ class DshCmdlet : Cmdlet(
 
         ctx.env["DSH_HOME"] = dshHome.absolutePath
         ctx.env["HOME"] = dshHome.absolutePath
+        // dsh native loader 用 DSH_PREFIX 替换 @TERMUX_PREFIX@（native-cache 路径）
+        ctx.env["DSH_PREFIX"] = dshHome.absolutePath
+        // require_builtin.node 内嵌 @TERMUX_PREFIX@ 缓存路径在非 termux 环境不可写，
+        // 关闭 native-cache 直接从包目录加载
+        ctx.env["NARB_DISABLE_NATIVE_CACHE"] = "1"
+        // exec 方式启动的 ELF 不走 zygote 的 nativeLibraryDir 搜索路径，
+        // 必须显式给动态链接器 LD_LIBRARY_PATH（libc++_shared.so 与 libnode.so 同目录）
+        val nativeDir = File(appCtx.applicationInfo.nativeLibraryDir)
+        ctx.env["LD_LIBRARY_PATH"] = listOf(nativeDir.absolutePath, ctx.env["LD_LIBRARY_PATH"] ?: "")
+            .filter { it.isNotBlank() }.joinToString(":")
         val argv = listOf(node, entry, "--profile", profile) + rest
         for (v in ctx.external.pipe(argv, input, ctx)) yield(v)
     }
