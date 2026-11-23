@@ -97,8 +97,7 @@ class MainActivity : AppCompatActivity(), TerminalSessionClient {
         bindService(Intent(this, TermService::class.java), serviceConn, Context.BIND_AUTO_CREATE)
     }
 
-    private fun ensureSession() {
-        val svc = termService ?: return
+    private fun ensureSession() {        val svc = termService ?: return
         if (session != null) return
 
         val home = File(filesDir, "home").apply { mkdirs() }
@@ -120,17 +119,24 @@ class MainActivity : AppCompatActivity(), TerminalSessionClient {
         val shellPath = if (File("/system/bin/mksh").canExecute()) "/system/bin/mksh"
                         else if (File("/system/xbin/mksh").canExecute()) "/system/xbin/mksh"
                         else "/system/bin/sh"
-        // ads() 桥：先写 .profile 再启动会话（mksh 启动即读取，不能有竞态）
+        // ads() 桥 + dsh() 命令：先写 .profile 再启动会话（mksh 启动即读取，不能有竞态）
+        val dshHome = File(filesDir, "dsh-home").apply { mkdirs() }
         val profile = File(home, ".profile")
-        if (!profile.exists()) {
+        run {
             val D: String = "${'$'}"
+            val native = binDir.absolutePath
+            val binJs = "${filesDir.absolutePath}/dsh-runtime/node_modules/@deepseek-ai/dsh/lib/bin.js"
             profile.writeText(
                 """
-                |# ADS cmdlet bridge（由应用生成；ads.env 由 SocketRepl 维护）
+                |# ADS cmdlet bridge + dsh launcher（由应用生成，每次启动刷新）
                 |if [ -f "${D}HOME/ads.env" ]; then
                 |  . "${D}HOME/ads.env"
                 |  ads() { printf '%s\n%b\n' "${D}ADS_TOKEN" "${D}*" | nc 127.0.0.1 "${D}ADS_PORT" | grep -v '^ads-exit:'; }
                 |fi
+                |dsh() {
+                |  if [ ${D}# -eq 0 ]; then set -- --profile sdk-minimal; fi
+                |  LD_LIBRARY_PATH=$native NARB_DISABLE_NATIVE_CACHE=1 DSH_PREFIX=$dshHome DSH_HOME=$dshHome exec $native/libnode.so $binJs "${D}@"
+                |}
                 |
                 """.trimMargin()
             )
