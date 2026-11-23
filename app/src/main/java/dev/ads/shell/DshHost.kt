@@ -34,6 +34,40 @@ object DshHost {
     /** web 模式下：官方 UI 就绪时回调 http://127.0.0.1:port/?token=... */
     fun setUrlSink(onUrl: (String) -> Unit) { urlSink = onUrl }
 
+    /**
+     * 预置工作区注册表：官方 web 前端的"选择工作区"读 dsh-workspace 的持久
+     * 注册表，而默认工作区的自动创建在桌面端依赖交互流程——安卓沙箱没有
+     * 目录选择器，这里直接写入一条指向沙箱 workspace 目录的合法记录。
+     */
+    private fun presetWorkspaceState(dshHome: File) {
+        val storages = File(dshHome, "storages").apply { mkdirs() }
+        val f = File(storages, "workspace.json")
+        if (f.exists()) return
+        val wsDir = File(dshHome, "workspace").apply { mkdirs() }
+        val now = java.time.Instant.now().toString()
+        f.writeText("""{
+  "unit": { "name": "workspace", "version": 2 },
+  "global": {
+    "initialized": true,
+    "defaultWorkspaceId": "ws-default-0001",
+    "workspaceIds": ["ws-default-0001"],
+    "archivedSessionIds": [],
+    "pinnedSessionIds": []
+  },
+  "tables": {
+    "workspaces": {
+      "ws-default-0001": {
+        "path": ${org.json.JSONObject.quote(wsDir.absolutePath)},
+        "title": "workspace",
+        "sessionIds": [],
+        "createdAt": ${org.json.JSONObject.quote(now)},
+        "updatedAt": ${org.json.JSONObject.quote(now)}
+      }
+    }
+  }
+}""")
+    }
+
     @Synchronized
     fun start(ctx: Context, profile: String = "sdk-minimal") {
         if (isRunning()) return
@@ -43,6 +77,7 @@ object DshHost {
         val binJs = File(appCtx.filesDir, "dsh-runtime/node_modules/@deepseek-ai/dsh/lib/bin.js")
         val dshHome = File(appCtx.filesDir, "dsh-home").apply { mkdirs() }
         val workDir = File(dshHome, "workspace").apply { mkdirs() }
+        presetWorkspaceState(dshHome)
 
         val argv = mutableListOf(node.absolutePath, binJs.absolutePath, "--profile", profile)
         if (profile == "web") argv.add("--no-open")
@@ -77,6 +112,7 @@ object DshHost {
                 val r = BufferedReader(InputStreamReader(p.inputStream))
                 while (running.get()) {
                     val line = r.readLine() ?: break
+                    android.util.Log.i("DshHost", line)
                     if (mode == "web") {
                         // dsh web: http://127.0.0.1:3080/?token=...
                         val m = Regex("""http://[^\s]*token=\S+""").find(line)
