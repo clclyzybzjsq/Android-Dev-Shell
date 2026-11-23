@@ -63,6 +63,14 @@ class MainActivity : AppCompatActivity(), TerminalSessionClient {
             }
         }
         bar.addView(title)
+        val webBtn = TextView(this).apply {
+            text = "🌐 dsh 对话 "
+            setTextColor(0xFFCE9178.toInt())
+            textSize = 15f
+            setPadding(0, 24, 12, 24)
+            setOnClickListener { startActivity(Intent(this@MainActivity, WebUiActivity::class.java)) }
+        }
+        bar.addView(webBtn)
         val pipeBtn = TextView(this).apply {
             text = "⌗ 管道控制台 "
             setTextColor(0xFF4EC9B0.toInt())
